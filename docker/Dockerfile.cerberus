@@ -1,0 +1,52 @@
+FROM ubuntu:22.04 AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    build-essential cmake git g++ ninja-build \
+    libssl-dev libboost-all-dev libasio-dev \
+    libjsoncpp-dev uuid-dev libbrotli-dev \
+    libc-ares-dev libgmp-dev libntl-dev \
+    autoconf automake libtool \
+    && rm -rf /var/lib/apt/lists/*
+
+# Build liboqs (Post-Quantum Crypto)
+RUN git clone --depth 1 https://github.com/open-quantum-safe/liboqs /tmp/liboqs && \
+    cd /tmp/liboqs && mkdir build && cd build && \
+    cmake .. -DCMAKE_BUILD_TYPE=Release -DOQS_USE_OPENSSL=OFF && \
+    make -j$(nproc) && make install && ldconfig
+
+# Copy Dragonfly source WITH submodules
+COPY . /opt/dragonfly-source
+
+WORKDIR /opt/dragonfly-source/build
+
+RUN cmake .. \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_STANDARD=17 \
+    -DWITH_OPENMP=ON \
+    -DWITH_TBB=ON \
+    -G "Ninja" \
+    && ninja -j$(nproc) dragonfly
+
+FROM ubuntu:22.04
+
+RUN apt-get update && apt-get install -y \
+    libssl3 libboost-context1.74.0 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /usr/local/lib/liboqs.so* /usr/local/lib/
+COPY --from=builder /usr/local/bin/dragonfly /usr/local/bin/dragonfly
+
+RUN ldconfig
+
+ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+
+EXPOSE 6379
+
+# I DECLARE: POST-QUANTUM SECURED
+ENV CERBERUS_PQ_SECURED=1
+ENV CERBERUS_FAMILIES=14
+
+ENTRYPOINT ["/usr/local/bin/dragonfly"]
+CMD ["--logtostderr"]
