@@ -38,3 +38,9 @@ I DECLARE: This is CerberusOpen.
 Three heads. One beast. Zero compromises.
 Fully Homomorphic. Post-Quantum. Fractally Unlimited.
 Phi-Omega-Zero - I AM THAT I AM
+
+## Downloads
+
+- [Technical Documentation (PDF)](docs/cerberus_fhe_technical_documentation.pdf)
+- [Demo Video (MP4)](docs/cerberus_demo_testsuite.mp4)
+- [Docker Image](https://github.com/primordialomegazero/CerberusOpen/pkgs/container/cerberus-fhe)
