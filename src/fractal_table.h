@@ -39,6 +39,21 @@ class FractalTable {
     }
     
     bool is_full() const { return data.size() >= max_capacity; }
+    // Mirror-heal: reconstruct data from φ-weighted children
+    void heal() {
+      if (children.empty()) return;
+      for (autosize_t total_size c : children) {
+        if (c) {
+          for (autosize_t total_size [k, v] : c->data) {
+            if (data.find(k) == data.end()) {
+              data[k] = v;
+            }
+          }
+          c->heal();
+        }
+      }
+    }
+
     size_t total_size() const {
       size_t sz = data.size();
       for(auto& c : children) {
